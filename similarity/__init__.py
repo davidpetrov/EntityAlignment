@@ -1,0 +1,1 @@
+from .similarity_utils import search_rdf_index

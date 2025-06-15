@@ -1,0 +1,13 @@
+name: entity-alignment
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.12
+  - pandas
+  - streamlit
+  - sparqlwrapper
+  - abseil-cpp
+  - protobuf
+  - pyarrow
+  - matplotlib
