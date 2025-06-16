@@ -3,6 +3,8 @@ import pandas as pd
 import csv
 import sys
 import time
+import json
+import os
 
 similarity_indices = {"DOID": "doid_labels", "MESH": "mesh_labels"}
 
@@ -77,7 +79,7 @@ def read_class_id_to_pref_label(file_name):
 
     return class_id_to_label
 
-def compute_hits_at_n(selected_pair, selected_mapping):
+def compute_hits_at_n(selected_pair, selected_mapping, save_candidates):
     start_time = time.time()
 
     kg_1, kg_2 = selected_pair.split("-")
@@ -100,25 +102,32 @@ def compute_hits_at_n(selected_pair, selected_mapping):
     print(f' {kg_1} has {len(kg_1_id_to_label)} ids')
 
     kg_1_label_to_kg_2 = {
-        label_1: kg_1_to_kg_2[id1]
+        (id1, label_1): kg_1_to_kg_2[id1]
         for id1, label_1 in kg_1_id_to_label.items()
         if id1 in kg_1_to_kg_2
     }
 
+    generated_candidates_file = None
+    if save_candidates:
+        generated_candidates_file = ("../data/candidates/" + selected_pair + "_" + selected_mapping).replace(".csv",
+                                                                                                             ".json")
+
     hits_at_n_results, _ = calculate_hits_at_n(kg_1_label_to_kg_2, search_rdf_index, index_name=index_name,
-                                               result_column_name=result_column_name)
+                                               result_column_name=result_column_name,
+                                               generated_candidates_file=generated_candidates_file)
     elapsed_time = time.time() - start_time
 
     return hits_at_n_results, len(mappings_df), elapsed_time
 
 
-def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_column_name):
+def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_column_name, generated_candidates_file):
     """
     Computes Hits@N metric for each entry in kg1_label_to_kg2.
+    Optionally it persists the generated candidates in generated_candidates_file.
 
     Parameters:
     - kg1_label_to_kg2 (dict): A dictionary mapping ICD-10 labels to DOID IDs.
-    - search_rdf_index (function): A function that executes SPARQL search and returns a DataFrame with 'doid_id'.
+    - search_rdf_index (function): A function that executes SPARQL search and returns a DataFrame with id, label and score columns
 
     Returns:
     - A dictionary with Hits@1, Hits@3, Hits@5, and Hits@10 scores.
@@ -127,19 +136,22 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
     hits_at_n = {1: 0, 3: 0, 5: 0, 10: 0}  # Track hits
     total_queries = len(kg1_label_to_kg2)  # Total number of queries
     failed_searches = []  # List to store failed queries
+    all_candidates = {}
 
-    for kg1_label, correct_kg2_id in kg1_label_to_kg2.items():
+    for (kg1_id, kg1_label), correct_kg2_id in kg1_label_to_kg2.items():
         # Call search function and get results
-        search_results = search_rdf_index(kg1_label, index_name,
-                                          result_column_name)  # Should return a DataFrame with 'doid_id' column
+        search_results = search_rdf_index(kg1_label, index_name, result_column_name, top_k=100)
+
+        if generated_candidates_file:
+            all_candidates[kg1_id] = search_results.to_dict(orient="records")
 
         # Extract top-N KG2 IDs from results
-        retrieved_doids = search_results[result_column_name].tolist()
+        retrieved_kg2_ids = search_results[result_column_name].tolist()
 
         # Debug print for verification
         # print(f"Search Query: '{kg1_label}'")
         # print(f"Expected {result_column_name}: {correct_kg2_id}")
-        # print(f"Retrieved {result_column_name} IDs (Top 10): {retrieved_doids[:10]}")
+        # print(f"Retrieved {result_column_name} IDs (Top 10): {retrieved_kg2_ids[:10]}")
 
         # Track if at least one hit was found in the top 10
         match_found = False
@@ -147,7 +159,7 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
         # Check if correct_kg2_id appears in the top N results
         for N in [1, 3, 5, 10]:
             # Ensure N doesn't exceed available results
-            retrieved_subset = retrieved_doids[:min(N, len(retrieved_doids))]
+            retrieved_subset = retrieved_kg2_ids[:min(N, len(retrieved_kg2_ids))]
 
             if correct_kg2_id in retrieved_subset:
                 hits_at_n[N] += 1  # Increase hit count for this N
@@ -159,5 +171,12 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
 
     # Normalize counts into percentages
     hits_at_n = {N: round((hits_at_n[N] / total_queries) * 100, 2) for N in hits_at_n}
+
+    if generated_candidates_file:
+        # Persists candidates
+        os.makedirs(os.path.dirname(generated_candidates_file), exist_ok=True)
+        with open(generated_candidates_file, "w", encoding="utf-8") as f:
+            json.dump(all_candidates, f, indent=2, ensure_ascii=False)
+        print("Candidates written to {}".format(generated_candidates_file))
 
     return hits_at_n, failed_searches

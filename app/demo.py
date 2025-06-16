@@ -74,9 +74,10 @@ elif task == "Similarity Search":
         "Mappings:", config[selected_pair] if selected_pair else []
     )
 
+    save_candidates = st.checkbox("Save candidates data", value=True)
     if st.button("Compute Hits@K"):
         with st.spinner("Computing Hits@K..."):
-            hits_scores, mapping_size, elapsed_time = compute_hits_at_n(selected_pair, selected_mapping)
+            hits_scores, mapping_size, elapsed_time = compute_hits_at_n(selected_pair, selected_mapping, save_candidates)
 
             if not hits_scores:
                 st.warning("No results returned.")
