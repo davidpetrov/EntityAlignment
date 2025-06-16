@@ -1,0 +1,247 @@
+Prefices
+{
+     rdf      :  http://www.w3.org/1999/02/22-rdf-syntax-ns#
+     rdfs     :  http://www.w3.org/2000/01/rdf-schema#
+     owl      :  http://www.w3.org/2002/07/owl#
+     xsd      :  http://www.w3.org/2001/XMLSchema#
+     onto : http://www.ontotext.com/
+     xsd : http://www.w3.org/2001/XMLSchema#
+     psys : http://proton.semanticweb.org/protonsys#
+     pext : http://proton.semanticweb.org/protonext#
+     oeo: http://ontotext.com/enrichment/ontology/
+     schema: http://schema.org/
+}
+
+Axioms
+{
+     <rdf:type> <rdf:type> <rdf:Property>
+     <rdf:subject> <rdf:type> <rdf:Property>
+     <rdf:predicate> <rdf:type> <rdf:Property>
+     <rdf:object> <rdf:type> <rdf:Property>
+     <rdf:first> <rdf:type> <rdf:Property>
+     <rdf:rest> <rdf:type> <rdf:Property>
+     <rdf:value> <rdf:type> <rdf:Property>
+     <rdf:nil> <rdf:type> <rdf:List>
+     <rdf:type> <rdfs:domain> <rdfs:Resource>
+
+     <rdfs:domain> <rdfs:domain> <rdf:Property>
+     <rdfs:range> <rdfs:domain> <rdf:Property>
+     <rdfs:subPropertyOf> <rdfs:domain> <rdf:Property>
+     <rdfs:subClassOf> <rdfs:domain> <rdfs:Class>
+
+
+     <rdf:subject> <rdfs:domain> <rdf:Statement>
+     <rdf:predicate> <rdfs:domain> <rdf:Statement>
+     <rdf:object> <rdfs:domain> <rdf:Statement>
+
+
+     <rdfs:member> <rdfs:domain> <rdfs:Resource>
+     <rdf:first> <rdfs:domain> <rdf:List>
+     <rdf:rest> <rdfs:domain> <rdf:List>
+     <rdfs:seeAlso> <rdfs:domain> <rdfs:Resource>
+     <rdfs:isDefinedBy> <rdfs:domain> <rdfs:Resource>
+     <rdfs:comment> <rdfs:domain> <rdfs:Resource>
+     <rdfs:label> <rdfs:domain> <rdfs:Resource>
+     <rdf:value> <rdfs:domain> <rdfs:Resource>
+
+
+     <rdfs:domain> <rdfs:range> <rdfs:Class>
+     <rdfs:range> <rdfs:range> <rdfs:Class>
+     <rdfs:subPropertyOf> <rdfs:range> <rdf:Property>
+     <rdfs:subClassOf> <rdfs:range> <rdfs:Class>
+
+     <rdf:subject> <rdfs:range> <rdfs:Resource>
+     <rdf:predicate> <rdfs:range> <rdfs:Resource>
+     <rdf:object> <rdfs:range> <rdfs:Resource>
+     <rdfs:member> <rdfs:range> <rdfs:Resource>
+     <rdf:first> <rdfs:range> <rdfs:Resource>
+     <rdf:rest> <rdfs:range> <rdf:List>
+
+     <rdfs:seeAlso> <rdfs:range> <rdfs:Resource>
+     <rdfs:isDefinedBy> <rdfs:range> <rdfs:Resource>
+     <rdfs:comment> <rdfs:range> <rdfs:Literal>
+     <rdfs:label> <rdfs:range> <rdfs:Literal>
+
+     <rdf:value> <rdfs:range> <rdfs:Resource>
+
+
+     <rdf:Alt> <rdfs:subClassOf> <rdfs:Container>
+     <rdf:Bag> <rdfs:subClassOf> <rdfs:Container>
+     <rdf:Seq> <rdfs:subClassOf> <rdfs:Container>
+     <rdfs:ContainerMembershipProperty> <rdfs:subClassOf> <rdf:Property>
+
+     <rdfs:isDefinedBy> <rdfs:subPropertyOf> <rdfs:seeAlso>
+
+     <rdf:XMLLiteral> <rdf:type> <rdfs:Datatype>
+     <rdf:XMLLiteral> <rdfs:subClassOf> <rdfs:Literal>
+     <rdfs:Datatype> <rdfs:subClassOf> <rdfs:Class>
+
+     <xsd:nonNegativeInteger> <rdf:type> <rdfs:Datatype>
+     <xsd:string> <rdf:type> <rdfs:Datatype>
+
+	<rdf:_1> <rdf:type> <rdf:Property>
+	<rdf:_1> <rdf:type> <rdfs:ContainerMembershipProperty>
+	<rdf:_1> <rdfs:domain> <rdfs:Resource>
+	<rdf:_1> <rdfs:range> <rdfs:Resource>
+		<owl:equivalentClass> <rdf:type> <owl:TransitiveProperty>
+  	<owl:equivalentClass> <rdf:type> <owl:SymmetricProperty>
+  	<owl:equivalentClass> <rdfs:subPropertyOf> <rdfs:subClassOf>
+  	<owl:equivalentProperty> <rdf:type> <owl:TransitiveProperty>
+  	<owl:equivalentProperty> <rdf:type> <owl:SymmetricProperty>
+  	<owl:equivalentProperty> <rdfs:subPropertyOf> <rdfs:subPropertyOf>
+  	<owl:inverseOf> <rdf:type> <owl:SymmetricProperty>
+  	<rdfs:subClassOf> <rdf:type> <owl:TransitiveProperty>
+  	<rdfs:subPropertyOf> <rdf:type> <owl:TransitiveProperty>
+  	<rdf:type> <psys:transitiveOver> <rdfs:subClassOf>
+  	<owl:differentFrom> <rdf:type> <owl:SymmetricProperty>
+  	<xsd:nonNegativeInteger> <rdf:type> <rdfs:Datatype>
+  	<xsd:string> <rdf:type> <rdfs:Datatype>
+  	<rdf:_1> <rdf:type> <rdf:Property>
+  	<rdf:_1> <rdf:type> <rdfs:ContainerMembershipProperty>
+
+}
+
+Rules
+{
+
+Id: rdf1_rdfs4a_4b
+     x  a  y
+    -------------------------------
+     x  <rdf:type>  <rdfs:Resource>
+     a  <rdf:type>  <rdfs:Resource>
+     y  <rdf:type>  <rdfs:Resource>
+/*[partialRDFS]*/
+
+
+Id: rdfs2
+     x  a  y                                  [Constraint a != <rdf:type>]
+     a  <rdfs:domain>  z                      [Constraint z != <rdfs:Resource>]
+    -------------------------------
+     x  <rdf:type>  z
+
+Id: rdfs3
+     x  a  u
+     a  <rdfs:range>  z                       [Constraint z != <rdfs:Resource>]
+    -------------------------------
+     u  <rdf:type>  z
+
+Id: rdfs5
+     a  <rdfs:subPropertyOf>  b               [Constraint a != b, a != c, b != c]
+     b  <rdfs:subPropertyOf>  c
+    -------------------------------
+     a  <rdfs:subPropertyOf>  c
+
+
+Id: rdfs6
+     a  <rdf:type> <rdf:Property>
+    -------------------------------
+     a  <rdfs:subPropertyOf>  a
+
+
+Id: rdfs9
+     a  <rdf:type>  x                         [Constraint x != y]
+     x  <rdfs:subClassOf>  y
+    -------------------------------
+     a  <rdf:type>  y
+
+
+Id: rdfs11
+     x  <rdfs:subClassOf>  y                  [Constraint x != y, x != z, y != z]
+     y  <rdfs:subClassOf>  z
+    -------------------------------
+     x  <rdfs:subClassOf>  z
+
+
+Id: rdfs12
+     x  <rdf:type>  <rdfs:ContainerMembershipProperty>
+    -------------------------------
+     x  <rdfs:subPropertyOf>  <rdfs:member>
+
+
+Id: rdfs13
+     x  <rdf:type>  <rdfs:Datatype>
+    -------------------------------
+     x  <rdfs:subClassOf>  <rdfs:Literal>
+Id: rdfs7
+     x  a  y                                  [Constraint a != b]
+     a  <rdfs:subPropertyOf>  b
+    -------------------------------
+     x  b  y
+
+
+Id: rdfs8_10
+     x  <rdf:type>  <rdfs:Class>
+    -------------------------------
+     x  <rdfs:subClassOf>  <rdfs:Resource>		
+     x  <rdfs:subClassOf>  x
+
+
+
+	Id: proton_TransitiveOver
+
+	  a <psys:transitiveOver> b
+	  c a d
+	  d b e
+	------------------------------------
+	  c a e
+
+
+	Id: proton_TransProp
+
+	  a <rdf:type> <owl:TransitiveProperty>
+	------------------------------------
+	  a <psys:transitiveOver> a
+
+
+	Id: proton_TransPropInduct
+
+	  a <psys:transitiveOver> a
+	------------------------------------
+	  a <rdf:type> <owl:TransitiveProperty>
+
+
+	Id: owl_invOf
+
+	  a b c
+	  b <owl:inverseOf> d
+	------------------------------------
+	  c d a
+
+
+	Id: owl_invOfBySymProp
+
+	  a <rdf:type> <owl:SymmetricProperty>
+	------------------------------------
+	  a <owl:inverseOf> a
+
+
+	Id: owl_SymPropByInverse
+
+	  a <owl:inverseOf> a
+	------------------------------------
+	  a <rdf:type> <owl:SymmetricProperty>
+
+	Id: owl_EquivClassBySubClass
+
+	  a <rdfs:subClassOf> b [Constraint b != a]
+	  b <rdfs:subClassOf> a [Cut]
+	------------------------------------
+	  a <owl:equivalentClass> b
+
+
+	Id: owl_EquivPropBySubProp
+
+	  a <rdfs:subPropertyOf> b [Constraint b != a]
+	  b <rdfs:subPropertyOf> a [Cut]
+	------------------------------------
+	  a <owl:equivalentProperty> b
+	  
+	Id: vera_mentions
+	  d <oeo:annotationInDocument> a
+	  a <rdf:type> <http://ontotext.com/enrichment/ontology/Annotation> 
+	  a <oeo:hasConcept> c
+	------------------------------------
+	  c <schema:mentionedIn> d
+
+}
+

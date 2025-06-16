@@ -1,1 +1,2 @@
 from .similarity_utils import search_rdf_index
+from .similarity_utils import compute_hits_at_n
