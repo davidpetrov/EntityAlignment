@@ -11,3 +11,5 @@ dependencies:
   - protobuf
   - pyarrow
   - matplotlib
+  - openai
+  - python-dotenv

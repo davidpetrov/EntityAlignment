@@ -114,13 +114,14 @@ def compute_hits_at_n(selected_pair, selected_mapping, save_candidates):
 
     hits_at_n_results, _ = calculate_hits_at_n(kg_1_label_to_kg_2, search_rdf_index, index_name=index_name,
                                                result_column_name=result_column_name,
-                                               generated_candidates_file=generated_candidates_file)
+                                               generated_candidates_file=generated_candidates_file, k_values=[1, 3, 5, 10, 20, 40] )
     elapsed_time = time.time() - start_time
 
     return hits_at_n_results, len(mappings_df), elapsed_time
 
 
-def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_column_name, generated_candidates_file):
+def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_column_name, generated_candidates_file,
+                        k_values=[1, 3, 5, 10]):
     """
     Computes Hits@N metric for each entry in kg1_label_to_kg2.
     Optionally it persists the generated candidates in generated_candidates_file.
@@ -133,17 +134,24 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
     - A dictionary with Hits@1, Hits@3, Hits@5, and Hits@10 scores.
     - A list of failed search queries (ICD-10 labels that didn't match in top 10 results).
     """
-    hits_at_n = {1: 0, 3: 0, 5: 0, 10: 0}  # Track hits
+    hits_at_n = {k: 0 for k in k_values}  # Track hits
     total_queries = len(kg1_label_to_kg2)  # Total number of queries
     failed_searches = []  # List to store failed queries
     all_candidates = {}
+
 
     for (kg1_id, kg1_label), correct_kg2_id in kg1_label_to_kg2.items():
         # Call search function and get results
         search_results = search_rdf_index(kg1_label, index_name, result_column_name, top_k=100)
 
+        # limit the score up to the 4th decimal point to save space in the persisted files
+        search_results["score"] = search_results["score"].round(4)
+
         if generated_candidates_file:
-            all_candidates[kg1_id] = search_results.to_dict(orient="records")
+            all_candidates[kg1_id] = {"label": kg1_label,
+                                      "equivalent_id": correct_kg2_id,
+                                      "candidates": search_results.to_dict(orient="records")
+                                      }
 
         # Extract top-N KG2 IDs from results
         retrieved_kg2_ids = search_results[result_column_name].tolist()
@@ -157,7 +165,7 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
         match_found = False
 
         # Check if correct_kg2_id appears in the top N results
-        for N in [1, 3, 5, 10]:
+        for N in k_values:
             # Ensure N doesn't exceed available results
             retrieved_subset = retrieved_kg2_ids[:min(N, len(retrieved_kg2_ids))]
 
@@ -175,8 +183,11 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
     if generated_candidates_file:
         # Persists candidates
         os.makedirs(os.path.dirname(generated_candidates_file), exist_ok=True)
+        result_json = {"hits_at_k": hits_at_n,
+                       "candidates": all_candidates
+                       }
         with open(generated_candidates_file, "w", encoding="utf-8") as f:
-            json.dump(all_candidates, f, indent=2, ensure_ascii=False)
+            json.dump(result_json, f, indent=2, ensure_ascii=False)
         print("Candidates written to {}".format(generated_candidates_file))
 
     return hits_at_n, failed_searches

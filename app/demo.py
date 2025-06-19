@@ -3,11 +3,18 @@ import pandas as pd
 import sys
 import os
 import json
+from dotenv import load_dotenv
+from pathlib import Path
+import math
+
+from llm import llm_utils
 
 # Add the main folder (parent of `app/`) to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from similarity.similarity_utils import search_rdf_index, compute_hits_at_n
+
+load_dotenv()
 
 # Load KG pairs and their mappings from JSON file
 @st.cache_data
@@ -16,16 +23,21 @@ def load_similarity_config():
     with open(config_path, 'r') as f:
         return json.load(f)
 
+def load_candidate_results():
+    candidates_results_folder = Path("../data/candidates/")
+    files = [f.name for f in candidates_results_folder.iterdir() if f.is_file()]
+    return files
+
 st.set_page_config(page_title="Entity Alignment Demo", layout="wide")
 st.title("🧠 Entity Alignment Toolkit")
-
 # Sidebar: Task selection
+
 task = st.sidebar.selectbox(
     "Select Task",
-    ["Candidates Finder", "Similarity Search"]
+    ["Candidates Finder", "Similarity Search", "LLM classification"]
 )
 
-# Task 1: Candidates Finder
+
 if task == "Candidates Finder":
     st.header("🔎 Candidates Finder")
 
@@ -102,3 +114,79 @@ elif task == "Similarity Search":
 
                 st.dataframe(styled_hits_df, use_container_width=True)
                 st.caption(f"Computed in {elapsed_time:.2f} seconds.")
+
+# Task 3 LLM classification
+elif task == "LLM classification":
+    st.header("LLM classification ")
+
+    # Saved candidates results
+    candidates_results = load_candidate_results()
+    candidates_results_names = [f.replace(".json","") for f in candidates_results if f.endswith(".json")]
+    candidates_result = st.selectbox("Choose candidates results:", candidates_results_names)
+
+
+    # Assumes the string is always in the format source-target_mappings
+    main_part = candidates_result.split("_")[0]  # 'ICD10CM-DOID'
+    source, target = main_part.split("-")
+
+    # Input: index to use
+    model_options = ["gpt-4o-mini", "gpt-3.5-turbo","gpt-4o-2024-11-20" ]
+    model = st.selectbox("Choose OpenAI model:", model_options)
+
+    current_page = 1
+
+    file_path = f"../data/candidates/{candidates_result}.json"
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    candidates_data = data.get("candidates", {})
+
+    filtered_candidates_data = {
+        kg1_id: entry
+        for kg1_id, entry in candidates_data.items()
+        if entry.get("equivalent_id") in {c["doid_id"] for c in entry.get("candidates", [])}
+    }
+
+    print(f"{candidates_result} contains {len(filtered_candidates_data)} classifiable ids.")
+
+    page_size = 10
+    total_pages = math.ceil(len(filtered_candidates_data) / page_size)
+
+    # Session state to track page
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = 1
+
+    # Get current page slice
+    start_idx = (st.session_state.current_page - 1) * page_size
+    end_idx = start_idx + page_size
+    keys = list(filtered_candidates_data.keys())
+    page_keys = keys[start_idx:end_idx]
+    page_data = {k: filtered_candidates_data[k] for k in page_keys}
+
+    # Trigger LLM classification
+    if st.button("Classify"):
+        with st.spinner("Sending prompts to OpenAI..."):
+            result_df, score = llm_utils.classify(page_data, model, source, target)
+
+            # Apply conditional styling to 'Predicted Target ID' column
+            def highlight_prediction(row):
+                color = "lightgreen" if row["Predicted Target ID"] == row["Correct Target ID"] else "#fdd"
+                return ["background-color: " + color if col == "Predicted Target ID" else "" for col in row.index]
+
+            styled_df = result_df.style.apply(highlight_prediction, axis=1)
+            st.dataframe(styled_df, use_container_width=True)
+
+            st.success(f"Success rate: {100 * score:.2f}%")
+
+    # Navigation controls
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("⬅️ Previous") and st.session_state.current_page > 1:
+            st.session_state.current_page -= 1
+    with col3:
+        if st.button("Next ➡️") and st.session_state.current_page < total_pages:
+            st.session_state.current_page += 1
+
+    # Show pagination info
+    st.caption(f"Page {st.session_state.current_page} of {total_pages}")
