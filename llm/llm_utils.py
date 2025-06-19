@@ -7,7 +7,11 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(filename='.env'))
 
 # Create the OpenAI client (reads API key from environment variable)
-client = openai.OpenAI()  # or set directly: api_key="sk-..."
+client = openai.OpenAI()
+
+# Prefixes for the available target ontologies, they are removed from the prompts, to save on cost per tokens
+target_prefixes = {"DOID": "http://purl.obolibrary.org/obo/",
+                   "MESH": "http://purl.bioontology.org/ontology/MESH/"}
 
 def find_equivalent_entity(model: str, prompt: str) -> str:
     """
@@ -32,6 +36,8 @@ def find_equivalent_entity(model: str, prompt: str) -> str:
         return None
 
 def create_prompt_with_candidates(source_ontology: str, target_ontology: str, source_id: str, info: dict ) -> str:
+    target_id_name = target_ontology.lower() + "_id"
+
     prompt = f"""You are comparing the ontologies {source_ontology} and {target_ontology}.
 
     Given the source entity:
@@ -41,8 +47,7 @@ def create_prompt_with_candidates(source_ontology: str, target_ontology: str, so
     Here are candidate equivalent entities in {target_ontology}:
     """
     for c in info["candidates"]:
-        short_id = c['doid_id'].rsplit('/', 1)[-1]
-        # todo fix the name of the id to be constant not 'doid_id'
+        short_id = c[target_id_name].rsplit('/', 1)[-1]
         prompt += f"- ID: {short_id}, Label: {c['label']}, String-similarity-score: {c['score']}\n"
 
     prompt += "\nWhich one is the best match?"
@@ -53,8 +58,7 @@ def create_prompt_with_candidates(source_ontology: str, target_ontology: str, so
 def classify(data, model, source, target):
     num_queries = len(data)
 
-    # todo add logic for automatic getting of the prefix
-    target_prefix = "http://purl.obolibrary.org/obo/"
+    target_prefix = target_prefixes[target]
 
     correct_cnt = 0
     results = []

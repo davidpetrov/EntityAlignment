@@ -128,6 +128,7 @@ elif task == "LLM classification":
     # Assumes the string is always in the format source-target_mappings
     main_part = candidates_result.split("_")[0]  # 'ICD10CM-DOID'
     source, target = main_part.split("-")
+    target_id_name = target.lower() + "_id"
 
     # Input: index to use
     model_options = ["gpt-4o-mini", "gpt-3.5-turbo","gpt-4o-2024-11-20" ]
@@ -145,7 +146,7 @@ elif task == "LLM classification":
     filtered_candidates_data = {
         kg1_id: entry
         for kg1_id, entry in candidates_data.items()
-        if entry.get("equivalent_id") in {c["doid_id"] for c in entry.get("candidates", [])}
+        if entry.get("equivalent_id") in {c[target_id_name] for c in entry.get("candidates", [])}
     }
 
     print(f"{candidates_result} contains {len(filtered_candidates_data)} classifiable ids.")
@@ -164,20 +165,52 @@ elif task == "LLM classification":
     page_keys = keys[start_idx:end_idx]
     page_data = {k: filtered_candidates_data[k] for k in page_keys}
 
+    # Track previous selections to reset cache when inputs change
+    if "last_candidates_result" not in st.session_state:
+        st.session_state.last_candidates_result = candidates_result
+    if "last_model" not in st.session_state:
+        st.session_state.last_model = model
+
+    # Reset classified results if inputs changed
+    if (st.session_state.last_candidates_result != candidates_result or
+            st.session_state.last_model != model):
+        st.session_state.classified_pages = {}  # Clear the cache
+        st.session_state.current_page = 1  # Optionally reset to page 1
+
+        # Update tracked inputs
+        st.session_state.last_candidates_result = candidates_result
+        st.session_state.last_model = model
+
+
+    # Session state to cache results
+    if "classified_pages" not in st.session_state:
+        st.session_state.classified_pages = {}
+
     # Trigger LLM classification
     if st.button("Classify"):
         with st.spinner("Sending prompts to OpenAI..."):
-            result_df, score = llm_utils.classify(page_data, model, source, target)
+            if st.session_state.current_page not in st.session_state.classified_pages:
+                result_df, score = llm_utils.classify(page_data, model, source, target)
+                st.session_state.classified_pages[st.session_state.current_page] = (result_df, score)
+            else:
+                result_df, score = st.session_state.classified_pages[st.session_state.current_page]
 
-            # Apply conditional styling to 'Predicted Target ID' column
+
+            # Highlight prediction column
             def highlight_prediction(row):
                 color = "lightgreen" if row["Predicted Target ID"] == row["Correct Target ID"] else "#fdd"
                 return ["background-color: " + color if col == "Predicted Target ID" else "" for col in row.index]
 
+
             styled_df = result_df.style.apply(highlight_prediction, axis=1)
             st.dataframe(styled_df, use_container_width=True)
 
-            st.success(f"Success rate: {100 * score:.2f}%")
+            # Compute aggregated score
+            all_scores = [s for (_, s) in st.session_state.classified_pages.values()]
+            cumulative_score = sum(all_scores) / len(all_scores)
+
+            st.success(f"Page success rate: {100 * score:.2f}%")
+            st.info(f"Cumulative success rate for first {len(st.session_state.classified_pages)} pages: {100 * cumulative_score:.2f}%")
 
     # Navigation controls
     col1, col2, col3 = st.columns(3)
