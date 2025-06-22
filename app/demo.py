@@ -29,7 +29,7 @@ def load_candidate_results():
     return files
 
 st.set_page_config(page_title="Entity Alignment Demo", layout="wide")
-st.title("🧠 Entity Alignment Toolkit")
+st.title("Entity Alignment Toolkit")
 # Sidebar: Task selection
 
 task = st.sidebar.selectbox(

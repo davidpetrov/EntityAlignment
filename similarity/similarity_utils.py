@@ -101,6 +101,10 @@ def compute_hits_at_n(selected_pair, selected_mapping, save_candidates):
     kg_1_id_to_label = read_class_id_to_pref_label("../data/datasets/csv/" + kg_1 + ".csv")
     print(f' {kg_1} has {len(kg_1_id_to_label)} ids')
 
+    # this is needed just for caching the correct label id from kg_2
+    kg_2_id_to_label = read_class_id_to_pref_label("../data/datasets/csv/" + kg_2 + ".csv")
+    print(f' {kg_2} has {len(kg_2_id_to_label)} ids')
+
     kg_1_label_to_kg_2 = {
         (id1, label_1): kg_1_to_kg_2[id1]
         for id1, label_1 in kg_1_id_to_label.items()
@@ -112,15 +116,18 @@ def compute_hits_at_n(selected_pair, selected_mapping, save_candidates):
         generated_candidates_file = ("../data/candidates/" + selected_pair + "_" + selected_mapping).replace(".csv",
                                                                                                              ".json")
 
-    hits_at_n_results, _ = calculate_hits_at_n(kg_1_label_to_kg_2, search_rdf_index, index_name=index_name,
+    hits_at_n_results, _ = calculate_hits_at_n(kg_1_label_to_kg_2, search_rdf_index, kg_2_id_to_label=kg_2_id_to_label,
+                                               index_name=index_name,
                                                result_column_name=result_column_name,
-                                               generated_candidates_file=generated_candidates_file, k_values=[1, 3, 5, 10, 20, 40] )
+                                               generated_candidates_file=generated_candidates_file,
+                                               k_values=[1, 3, 5, 10, 20, 40])
     elapsed_time = time.time() - start_time
 
     return hits_at_n_results, len(mappings_df), elapsed_time
 
 
-def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_column_name, generated_candidates_file,
+def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, kg_2_id_to_label, index_name, result_column_name,
+                        generated_candidates_file,
                         k_values=[1, 3, 5, 10]):
     """
     Computes Hits@N metric for each entry in kg1_label_to_kg2.
@@ -147,9 +154,16 @@ def calculate_hits_at_n(kg1_label_to_kg2, search_rdf_index, index_name, result_c
         # limit the score up to the 4th decimal point to save space in the persisted files
         search_results["score"] = search_results["score"].round(4)
 
+        equivalent_id_label = None
         if generated_candidates_file:
+            if correct_kg2_id not in kg_2_id_to_label:
+                print("There is no label for correct target id {}".format(correct_kg2_id))
+            else:
+                equivalent_id_label = kg_2_id_to_label[correct_kg2_id]
+
             all_candidates[kg1_id] = {"label": kg1_label,
                                       "equivalent_id": correct_kg2_id,
+                                      "equivalent_id_label": equivalent_id_label,
                                       "candidates": search_results.to_dict(orient="records")
                                       }
 

@@ -67,6 +67,7 @@ def classify(data, model, source, target):
 
         label = info.get("label")
         equivalent_id = info.get("equivalent_id")
+        equivalent_id_label = info.get("equivalent_id_label")
 
         prompt = create_prompt_with_candidates(source, target, source_id, info)
         llm_answer = target_prefix +  find_equivalent_entity(model, prompt)
@@ -74,13 +75,16 @@ def classify(data, model, source, target):
         if llm_answer == equivalent_id:
             print(f"Correct answer for {source_id}: {label}!")
             correct_cnt += 1
-
+        else:
+            print(f"For {source_id}: LLM answer is {llm_answer}, but equivalent ID is {equivalent_id}")
         results.append({
             "Source ID": source_id,
             "Label": label,
             "Predicted Target ID": llm_answer,
-            "Correct Target ID": equivalent_id
+            "Correct Target Label": equivalent_id_label,
+            "Correct Target ID": equivalent_id,
         })
+
 
     df = pd.DataFrame(results)
     score = correct_cnt / num_queries if num_queries > 0 else 0.0
