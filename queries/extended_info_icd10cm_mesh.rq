@@ -1,0 +1,19 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?subject
+       (GROUP_CONCAT(DISTINCT ?altLabel; separator="; ") AS ?altLabels)
+       (GROUP_CONCAT(DISTINCT ?parentLabel; separator="; ") AS ?parentClassLabels)
+WHERE {
+  BIND(<{{ENTITY_URI}}> AS ?subject)
+
+  OPTIONAL {
+    ?subject skos:altLabel ?altLabel .
+  }
+
+  OPTIONAL {
+    ?subject rdfs:subClassOf ?parent .
+    ?parent skos:prefLabel ?parentLabel .
+  }
+}
+GROUP BY ?subject

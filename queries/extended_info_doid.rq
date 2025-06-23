@@ -1,0 +1,18 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+
+SELECT ?subject
+       (GROUP_CONCAT(DISTINCT ?altLabel; separator="; ") AS ?altLabels)
+       (GROUP_CONCAT(DISTINCT ?parentLabel; separator="; ") AS ?parentClassLabels)
+WHERE {
+  BIND(<{{ENTITY_URI}}> AS ?subject)
+
+  OPTIONAL {
+    ?subject oboInOwl:hasExactSynonym ?altLabel .
+  }
+  OPTIONAL {
+    ?subject rdfs:subClassOf ?parent .
+    ?parent rdfs:label ?parentLabel .
+  }
+}
+GROUP BY ?subject
