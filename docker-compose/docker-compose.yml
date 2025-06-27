@@ -12,9 +12,9 @@ services:
       - type: bind
         source: ./search/vera.pie
         target: /opt/graphdb/home/data/repositories/WeVerify/vera.pie
-      - type: bind
-        source: $HOME/.ontotext/licenses/graphdb-ee.license
-        target: /opt/graphdb/home/conf/graphdb.license
+#      - type: bind
+#        source: $HOME/.ontotext/licenses/graphdb-ee.license
+#        target: /opt/graphdb/home/conf/graphdb.license
       - type: bind
         source: ./data
         target: /opt/graphdb/home/data
