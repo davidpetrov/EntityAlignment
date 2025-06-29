@@ -74,7 +74,7 @@ Similarity Search Evaluation in the application
 datasets/csv/ - contains the available datasets in csv format. For biomedical datasets can be downloaded from - https://bioportal.bioontology.org/ontologies
 
 mappings/ - contains the available mappings for the datasets. For biomedical mappings can be downloaded from https://bioportal.bioontology.org/mappings
-The files should be two columns csv file, with names *_mappings_<GraphA_GraphB.csv>.
+The files should be with name with names <*_mappings_GraphA_GraphB>.csv. and should contain two columns. 
 
 similarity_config.json - represent a configuration for the available mappings files for each graph pair
 
